@@ -1,0 +1,31 @@
+import pandas as pd
+
+# Use a relative path to refer to the data file
+data_path = './data/table4_dta.csv'
+df = pd.read_csv(data_path)
+import subprocess
+import sys
+
+# Install necessary packages
+subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'pandas', 'statsmodels'])
+
+import statsmodels.formula.api as smf
+# Take a random sample of 3/10 of the dataset
+sample_df = df.sample(frac=0.3, random_state=42)
+
+# Drop rows with missing values in relevant columns
+sample_df = sample_df.dropna(subset=['ett', 'experiment', 'female', 'dod'])
+
+# Define the regression formulas
+formula1 = 'dod ~ experiment + female + C(foddar) + C(kommun60):C(foddar)'
+formula2 = 'dod ~ experiment + female + C(foddar) + C(kommun60):C(foddar)'
+
+# Fit the models on the sampled data
+model1 = smf.wls(formula=formula1, data=sample_df, weights=sample_df['ett']).fit(cov_type='cluster', cov_kwds={'groups': sample_df['kommun60']})
+model2 = smf.wls(formula=formula2, data=sample_df[sample_df['female'] == 0], weights=sample_df[sample_df['female'] == 0]['ett']).fit(cov_type='cluster', cov_kwds={'groups': sample_df[sample_df['female'] == 0]['kommun60']})
+model3 = smf.wls(formula=formula2, data=sample_df[sample_df['female'] == 1], weights=sample_df[sample_df['female'] == 1]['ett']).fit(cov_type='cluster', cov_kwds={'groups': sample_df[sample_df['female'] == 1]['kommun60']})
+
+# Print the regression results
+print(model1.summary())
+print(model2.summary())
+print(model3.summary())
